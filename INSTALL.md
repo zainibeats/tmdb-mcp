@@ -6,19 +6,16 @@
 # Create project directory
 git clone https://github.com/zainibeats/tmdb-mcp
 cd tmdb-mcp
-
-# Save all 5 files in this directory:
-# - Dockerfile
-# - requirements.txt
-# - tmdb_server.py
-# - readme.md
-# - CLAUDE.md
 ```
 
-## Step 2: Build Docker Image
+## Step 2: Build or Pull Docker Image
 
 ```bash
+# Build image
 docker build -t tmdb-mcp .
+
+# Pull image from docker hub
+docker pull skimming124/tmdb-mcp
 ```
 
 ## Step 3: Set Up Secrets
@@ -54,7 +51,7 @@ registry:
     title: "TMDB"
     type: server
     dateAdded: "2025-01-09T00:00:00Z"
-    image: skimming124/tmdb-mcp:latest
+    image: tmdb-mcp   # if pulled docker image, use: skimming124/tmdb-mcp:latest
     ref: ""
     readme: ""
     toolsUrl: ""
