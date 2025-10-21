@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that provides read-only access to The Movi
 
 ## Purpose
 
-This MCP server provides a secure interface for AI assistants to query movie and TV show data from TMDB, including searching, retrieving details, discovering content, and getting recommendations.
+This MCP server provides a secure interface for AI assistants (eg. Claude Desktop, LM Studio, Cline etc.) to query movie and TV show data from TMDB, including searching, retrieving details, discovering content, and getting recommendations.
 
 ## Features
 
@@ -79,32 +79,6 @@ echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | python tmdb_server.py
 2. Decorate with `@mcp.tool()`
 3. Update the catalog entry with the new tool name
 4. Rebuild the Docker image
-
-## Troubleshooting
-
-### Tools Not Appearing
-- Verify Docker image built successfully
-- Check catalog and registry files
-- Ensure Claude Desktop config includes custom catalog
-- Restart Claude Desktop
-
-### Authentication Errors
-- Verify secrets with `docker mcp secret list`
-- Ensure TMDB_API_KEY is set correctly
-- Check API key validity at TMDB website
-
-### No Results Returned
-- Verify TMDB API is accessible
-- Check rate limiting (40 requests/10 seconds)
-- Ensure search queries are properly formatted
-
-## Security Considerations
-
-- TMDB API key stored in Docker Desktop secrets
-- Never hardcode credentials
-- Running as non-root user
-- Read-only operations only
-- No user authentication endpoints accessed
 
 ## API Rate Limits
 
