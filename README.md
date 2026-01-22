@@ -1,5 +1,7 @@
 # TMDB MCP Server
 
+> **Note**: This project contains AI-generated code.
+
 A Model Context Protocol (MCP) server that provides read-only access to The Movie Database (TMDB) API for movie and TV show information.
 
 ## Purpose
