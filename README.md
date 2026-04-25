@@ -2,11 +2,13 @@
 
 > **Note**: This project contains AI-generated code.
 
-A Model Context Protocol (MCP) server that provides read-only access to The Movie Database (TMDB) API for movie and TV show information.
+A local Model Context Protocol (MCP) toolchain for media discovery and TMDB-based provider URL resolution.
 
 ## Purpose
 
-This MCP server provides a secure interface for AI assistants (eg. Claude Desktop, LM Studio, Cline etc.) to query movie and TV show data from TMDB, including searching, retrieving details, discovering content, and getting recommendations.
+The main TMDB MCP server provides a read-only interface for AI assistants (eg. Claude Desktop, LM Studio, Claude Code etc.) to query movie and TV show data from TMDB, including searching, retrieving details, discovering content, and getting recommendations.
+
+The separate embed resolver MCP server turns a confirmed TMDB ID into provider URLs and a local UI prefill URL. This keeps discovery and URL resolution as separate local services.
 
 ## Features
 
@@ -37,7 +39,7 @@ This MCP server provides a secure interface for AI assistants (eg. Claude Deskto
 
 ## Installation
 
-Follow the [installation guide](./INSTALL.md) for step-by-step instructions to get the MCP server up and running. The process includes building the Docker image, configuring your TMDB API key, setting up the MCP catalog, and integrating with Claude Desktop.
+Follow the [installation guide](./docs/INSTALL.md) for step-by-step instructions to get the MCP servers running through Docker MCP Gateway.
 
 ## Usage Examples
 
@@ -52,14 +54,26 @@ In Claude Desktop, you can ask:
 - "Get the cast of The Dark Knight"
 - "Find horror movies from 2023 with rating above 7"
 - "Search for content related to Christopher Nolan"
+- "Generate provider URLs for movie TMDB ID 550"
+- "Generate provider URLs for TV TMDB ID 1396 season 1 episode 1"
 
 ## Architecture
 ```
-Claude Desktop → MCP Gateway → TMDB MCP Server → TMDB API
-                      ↓
-              Docker Desktop Secrets
-                (TMDB_API_KEY)
+Claude Desktop / LM Studio / Claude Code
+              |
+       Docker MCP Gateway
+          |          |
+   TMDB MCP      Embed Resolver MCP
+      |               |
+   TMDB API      Provider templates
 ```
+
+Expected flow:
+
+1. The user asks for recommendations or a known title.
+2. The assistant uses the TMDB MCP server to search, discover, and present options.
+3. After the user commits to a movie or TV show, the assistant calls the embed resolver with `media_type` and `tmdb_id`.
+4. The resolver returns provider URLs plus a `ui_url` such as `http://localhost:8689/?mediaType=movie&tmdbId=550`.
 
 ## Development
 
@@ -71,16 +85,26 @@ export TMDB_API_KEY="your-api-key"
 # Run directly
 python tmdb_server.py
 
+# Run the embed resolver directly
+python embed-resolver-mcp/server.py
+
 # Test MCP protocol
 echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | python tmdb_server.py
 ```
 
-### Adding New Tools
+### Adding TMDB Tools
 
 1. Add the function to `tmdb_server.py`
 2. Decorate with `@mcp.tool()`
 3. Update the catalog entry with the new tool name
 4. Rebuild the Docker image
+
+### Adding Resolver Tools
+
+1. Add the function to `embed-resolver-mcp/server.py`
+2. Decorate with `@mcp.tool()`
+3. Update the resolver catalog entry
+4. Rebuild the resolver Docker image
 
 ## API Rate Limits
 
