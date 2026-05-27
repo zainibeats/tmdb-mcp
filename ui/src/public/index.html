@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TMDB Embed URL Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .copied {
+      background-color: #10b981 !important;
+      color: white !important;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 min-h-screen py-8">
+  <div class="container mx-auto max-w-4xl px-4">
+    <!-- Header -->
+    <div class="bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+      <h1 class="text-3xl font-bold text-gray-100 mb-2">TMDB Embed URL Generator</h1>
+      <p class="text-gray-300">Generate embed URLs for streaming providers using TMDB IDs</p>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+      <form id="embedForm" class="space-y-4">
+        <!-- Media Type -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Media Type</label>
+          <select id="mediaType" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="movie">Movie</option>
+            <option value="tv">TV Show</option>
+          </select>
+        </div>
+
+        <!-- TMDB ID -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">TMDB ID</label>
+          <input
+            type="number"
+            id="tmdbId"
+            placeholder="e.g., 550 for Fight Club"
+            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        <!-- Season and Episode (TV only) -->
+        <div id="tvFields" class="hidden space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Season</label>
+              <input
+                type="number"
+                id="season"
+                placeholder="e.g., 1"
+                min="1"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Episode</label>
+              <input
+                type="number"
+                id="episode"
+                placeholder="e.g., 1"
+                min="1"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Provider Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Select Providers</label>
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                id="selectAll"
+                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-700 rounded"
+                checked
+              />
+              <label for="selectAll" class="ml-2 text-sm font-semibold text-gray-100">Select All</label>
+            </div>
+            <div id="providerCheckboxes" class="pl-6 space-y-2">
+              <!-- Provider checkboxes will be dynamically generated here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition duration-200 ease-in-out transform hover:scale-105"
+        >
+          Generate Embed URLs
+        </button>
+      </form>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="hidden bg-gray-800 rounded-lg shadow-md p-6">
+      <h2 class="text-2xl font-bold text-gray-100 mb-4">Generated URLs</h2>
+      <div id="urlList" class="space-y-3"></div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="hidden bg-red-900 border border-red-700 rounded-lg p-4 mb-6">
+      <p class="text-red-200 font-medium"></p>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const mediaTypeSelect = document.getElementById('mediaType');
+    const tvFields = document.getElementById('tvFields');
+    const embedForm = document.getElementById('embedForm');
+    const results = document.getElementById('results');
+    const urlList = document.getElementById('urlList');
+    const errorMessage = document.getElementById('errorMessage');
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const providerCheckboxesContainer = document.getElementById('providerCheckboxes');
+
+    // Load providers dynamically
+    async function loadProviders() {
+      try {
+        const response = await fetch('/api/providers');
+        if (!response.ok) {
+          throw new Error('Failed to load providers');
+        }
+        const providers = await response.json();
+        renderProviderCheckboxes(providers);
+      } catch (error) {
+        console.error('Error loading providers:', error);
+        showError('Failed to load providers. Please refresh the page.');
+      }
+    }
+
+    function renderProviderCheckboxes(providers) {
+      providerCheckboxesContainer.innerHTML = '';
+
+      providers.forEach(provider => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `provider-${provider}`;
+        checkbox.value = provider;
+        checkbox.className = 'provider-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-700 rounded';
+        checkbox.checked = true;
+
+        const label = document.createElement('label');
+        label.htmlFor = `provider-${provider}`;
+        label.className = 'ml-2 text-sm text-gray-300';
+        label.textContent = provider;
+
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        providerCheckboxesContainer.appendChild(div);
+
+        // Add event listener for Select All functionality
+        checkbox.addEventListener('change', () => {
+          const allCheckboxes = document.querySelectorAll('.provider-checkbox');
+          const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+          selectAllCheckbox.checked = allChecked;
+        });
+      });
+    }
+
+    function applyPrefillFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      const mediaType = params.get('mediaType');
+      const tmdbId = params.get('tmdbId');
+      const season = params.get('season');
+      const episode = params.get('episode');
+
+      if (mediaType === 'movie' || mediaType === 'tv') {
+        mediaTypeSelect.value = mediaType;
+        mediaTypeSelect.dispatchEvent(new Event('change'));
+      }
+
+      if (tmdbId) {
+        document.getElementById('tmdbId').value = tmdbId;
+      }
+
+      if (season) {
+        document.getElementById('season').value = season;
+      }
+
+      if (episode) {
+        document.getElementById('episode').value = episode;
+      }
+
+      if (tmdbId) {
+        embedForm.requestSubmit();
+      }
+    }
+
+    // Toggle TV fields based on media type
+    mediaTypeSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'tv') {
+        tvFields.classList.remove('hidden');
+        document.getElementById('season').required = true;
+        document.getElementById('episode').required = true;
+      } else {
+        tvFields.classList.add('hidden');
+        document.getElementById('season').required = false;
+        document.getElementById('episode').required = false;
+      }
+    });
+
+    // Select All functionality
+    selectAllCheckbox.addEventListener('change', (e) => {
+      const providerCheckboxes = document.querySelectorAll('.provider-checkbox');
+      providerCheckboxes.forEach(checkbox => {
+        checkbox.checked = e.target.checked;
+      });
+    });
+
+    // Form submission
+    embedForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Hide previous results and errors
+      results.classList.add('hidden');
+      errorMessage.classList.add('hidden');
+
+      // Get form values
+      const mediaType = document.getElementById('mediaType').value;
+      const tmdbId = document.getElementById('tmdbId').value;
+      const season = document.getElementById('season').value;
+      const episode = document.getElementById('episode').value;
+
+      // Get selected providers
+      const providerCheckboxes = document.querySelectorAll('.provider-checkbox');
+      const selectedProviders = Array.from(providerCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+      if (selectedProviders.length === 0) {
+        showError('Please select at least one provider');
+        return;
+      }
+
+      // Build request payload
+      const payload = {
+        mediaType,
+        tmdbId,
+        providers: selectedProviders
+      };
+
+      if (mediaType === 'tv') {
+        payload.season = season;
+        payload.episode = episode;
+      }
+
+      try {
+        // Call API
+        const response = await fetch('/api/generate-embeds', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to generate URLs');
+        }
+
+        const urls = await response.json();
+
+        // Display results
+        displayResults(urls);
+      } catch (error) {
+        showError(error.message);
+      }
+    });
+
+    function displayResults(urls) {
+      urlList.innerHTML = '';
+
+      urls.forEach(item => {
+        if (item.error) {
+          // Display error for this provider
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'bg-red-900 border border-red-700 rounded-md p-3';
+          errorDiv.innerHTML = `
+            <p class="text-sm font-medium text-red-200">${item.provider}</p>
+            <p class="text-xs text-red-300 mt-1">Error: ${item.error}</p>
+          `;
+          urlList.appendChild(errorDiv);
+        } else {
+          // Display URL with copy button
+          const urlDiv = document.createElement('div');
+          urlDiv.className = 'bg-gray-700 border border-gray-600 rounded-md p-3';
+          urlDiv.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div class="flex-1 mr-4">
+                <p class="text-sm font-medium text-gray-100">${item.provider}</p>
+                <p class="text-xs text-gray-300 mt-1 break-all">${item.url}</p>
+              </div>
+              <button
+                onclick="copyToClipboard('${item.url.replace(/'/g, "\\'")}', this)"
+                class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded transition duration-150 whitespace-nowrap"
+              >
+                Copy
+              </button>
+            </div>
+          `;
+          urlList.appendChild(urlDiv);
+        }
+      });
+
+      results.classList.remove('hidden');
+    }
+
+    function showError(message) {
+      errorMessage.querySelector('p').textContent = message;
+      errorMessage.classList.remove('hidden');
+    }
+
+    function copyToClipboard(text, button) {
+      // Try modern Clipboard API first (requires HTTPS or localhost)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showCopySuccess(button);
+        }).catch(err => {
+          console.error('Clipboard API failed:', err);
+          // Fallback to execCommand if Clipboard API fails
+          fallbackCopy(text, button);
+        });
+      } else {
+        // Use fallback method for insecure contexts (HTTP over LAN)
+        fallbackCopy(text, button);
+      }
+    }
+
+    function fallbackCopy(text, button) {
+      // Create temporary textarea element
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-999999px';
+      textarea.style.top = '-999999px';
+      document.body.appendChild(textarea);
+
+      // Select and copy
+      textarea.focus();
+      textarea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showCopySuccess(button);
+        } else {
+          showError('Failed to copy to clipboard');
+        }
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showError('Failed to copy to clipboard');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+
+    function showCopySuccess(button) {
+      const originalText = button.textContent;
+      button.textContent = 'Copied!';
+      button.classList.add('copied');
+
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove('copied');
+      }, 2000);
+    }
+
+    // Load providers on page load, then apply any MCP-generated prefill URL.
+    loadProviders().then(applyPrefillFromQuery);
+  </script>
+</body>
+</html>

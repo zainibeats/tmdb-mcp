@@ -1,0 +1,36 @@
+name: tmdb
+title: TMDB
+type: server
+image: skimming124/tmdb-mcp:latest
+description: Read-only TMDB discovery tools for movie and TV recommendations.
+secrets:
+  - name: TMDB_API_KEY
+    env: TMDB_API_KEY
+    example: tmdb_api_key_here
+tools:
+  - name: search_movies
+  - name: search_tv
+  - name: search_multi
+  - name: get_movie_details
+  - name: get_tv_details
+  - name: get_top_rated_movies
+  - name: get_top_rated_tv
+  - name: get_popular_movies
+  - name: get_popular_tv
+  - name: get_trending
+  - name: get_similar_movies
+  - name: get_similar_tv
+  - name: get_genres
+  - name: get_movie_credits
+  - name: get_movie_reviews
+  - name: discover_movies
+  - name: discover_tv
+metadata:
+  category: integration
+  tags:
+    - movies
+    - tv
+    - entertainment
+    - tmdb
+  license: MIT
+  owner: skimming124

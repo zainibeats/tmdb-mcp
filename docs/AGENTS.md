@@ -1,6 +1,19 @@
-# TMDB MCP Server - Implementation Guide for Claude
+# AGENTS.md
 
-## Overview
+## Rules for Agent
+
+- Always keep your responses concise to the user
+- Always signal me when it's time to compact the context (/compact) and/or when you are ready to agentically work on your own (i.e. spin up sub-agents, write/use skills, search online, etc without human interaction).
+- Use the latest stable versions of packages
+- Never hard‑code sensitive info
+- Ask clarifying questions if the user’s intent is ambiguous
+- Less is always more. Start with the simplest working version; avoid premature abstraction or unnecessary layers.
+- Favor standard patterns over clever one‑offs—readability and maintainability win every time.
+- Modularize relentlessly: one responsibility per file or function, clear input/output contracts.
+- Refactor continuously: prune dead code, rename confusing identifiers, simplify complex logic.
+- Document succinctly: docstrings for public APIs, README to outline high‑level project conventions.
+
+## Project Overview
 
 This MCP server provides raw JSON responses from The Movie Database (TMDB) API. All tools return unmodified JSON directly from TMDB endpoints.
 
@@ -58,6 +71,15 @@ Format: `{"error": "Description of error"}`
 
 ## Usage Patterns
 
+### Recommendation Flow for Local Models
+1. Use the TMDB discovery server first.
+2. Present a small set of candidate movies or shows with title, year/date, rating, overview, and TMDB ID.
+3. Wait for the user to choose one result.
+4. Call `generate_embed_urls_for_tmdb` on the embed resolver with the selected `media_type` and `tmdb_id`.
+5. Return the `ui_url` as the clickable local link.
+
+Do not call the embed resolver during broad discovery. It should only be used after the user selects a specific TMDB item.
+
 ### Finding TMDB IDs
 When users ask for a TMDB ID:
 1. Use appropriate search tool (search_movies, search_tv, search_multi)
@@ -78,6 +100,17 @@ For filtered searches:
    - `"primary_release_year": "2023"`
    - `"vote_average.gte": "7.0"`
    - `"sort_by": "popularity.desc"`
+
+Example:
+
+```json
+{
+  "with_genres": "35",
+  "vote_average.gte": "6",
+  "primary_release_date.lte": "2002-12-31",
+  "sort_by": "vote_average.desc"
+}
+```
 
 ### Handling Pagination
 When users want more results:

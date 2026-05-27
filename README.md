@@ -31,11 +31,24 @@ The separate embed resolver MCP server turns a confirmed TMDB ID into provider U
 - **`discover_movies`** - Discover movies with advanced filters (genre, year, rating, etc.)
 - **`discover_tv`** - Discover TV shows with advanced filters
 
+## Recommended Runtime
+
+Use Docker MCP Gateway as the single MCP entrypoint for local clients such as LM Studio or Claude Desktop.
+
+The production-style local setup uses three containers/images:
+
+- `skimming124/tmdb-mcp:latest` - TMDB discovery MCP server
+- `skimming124/tmdb-embed-resolver:latest` - MCP server that returns provider URLs and a clickable local UI link
+- `skimming124/tmdb-embed-ui:latest` - companion UI served at `http://localhost:8689`
+
+Keeping discovery and provider-link generation as separate MCP servers makes tool choice easier for local models: first discover and compare titles, then call the resolver only after the user chooses a specific TMDB ID.
+
 ## Prerequisites
 
 - Docker Desktop with MCP Toolkit enabled
 - Docker MCP CLI plugin (`docker mcp` command)
 - TMDB API Key (free from https://www.themoviedb.org/settings/api)
+- LM Studio 0.4.0+ or another MCP client that can run Docker MCP Gateway over stdio
 
 ## Installation
 
@@ -73,7 +86,8 @@ Expected flow:
 1. The user asks for recommendations or a known title.
 2. The assistant uses the TMDB MCP server to search, discover, and present options.
 3. After the user commits to a movie or TV show, the assistant calls the embed resolver with `media_type` and `tmdb_id`.
-4. The resolver returns provider URLs plus a `ui_url` such as `http://localhost:8689/?mediaType=movie&tmdbId=550`.
+4. The resolver returns provider URLs plus a clickable `ui_url` such as `http://localhost:8689/?mediaType=movie&tmdbId=550`.
+5. Opening the `ui_url` pre-fills the UI and generates provider links locally.
 
 ## Development
 

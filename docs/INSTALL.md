@@ -1,214 +1,214 @@
-# INSTALLATION INSTRUCTIONS
+# Installation
 
-## Step 1: Clone Repository
+This guide sets up the TMDB MCP toolchain for local-model clients through Docker MCP Gateway.
 
-```bash
-# Create project directory
-git clone https://github.com/zainibeats/tmdb-mcp
-cd tmdb-mcp
+## Architecture
+
+Run the UI as a normal Docker container, then expose both MCP servers through one Docker MCP Gateway profile.
+
+```text
+LM Studio / Claude Desktop
+          |
+ docker mcp gateway run --profile tmdb-media
+          |
+    +-----+----------------+
+    |                      |
+ TMDB MCP           TMDB Embed Resolver MCP
+    |                      |
+ TMDB API           provider templates + UI links
+                           |
+                 http://localhost:8689
 ```
 
-## Step 2: Build Docker Images
+The recommended runtime images are:
+
+- `skimming124/tmdb-mcp:latest`
+- `skimming124/tmdb-embed-resolver:latest`
+- `skimming124/tmdb-embed-ui:latest`
+
+## Prerequisites
+
+- Docker Desktop with MCP Toolkit enabled
+- Docker MCP CLI plugin available as `docker mcp`
+- TMDB API key from `https://www.themoviedb.org/settings/api`
+- LM Studio 0.4.0+ or Claude Desktop
+
+Check Docker MCP:
 
 ```bash
-# Build the TMDB discovery MCP image
-docker build -t tmdb-mcp .
-
-# Build the provider URL resolver MCP image
-docker build -f embed-resolver-mcp/Dockerfile -t tmdb-embed-resolver .
+docker mcp version
 ```
 
-## Step 3: Set Up Secrets
+If that command is missing, update Docker Desktop and enable MCP Toolkit before continuing.
+
+## 1. Start the UI
+
+The UI is required for clickable resolver links such as `http://localhost:8689/?mediaType=movie&tmdbId=550`.
 
 ```bash
-# Get your free API key from https://www.themoviedb.org/settings/api
-# Then set it as a Docker secret
-docker mcp secret set TMDB_API_KEY="your-tmdb-api-key-here"
+docker run -d \
+  --name tmdb-embed-ui \
+  --restart unless-stopped \
+  -p 8689:8689 \
+  skimming124/tmdb-embed-ui:latest
+```
 
-# Verify the secret was saved
+Verify it:
+
+```bash
+curl http://localhost:8689/health
+```
+
+## 2. Store the TMDB API Key
+
+```bash
+docker mcp secret set TMDB_API_KEY="your-tmdb-api-key"
 docker mcp secret list
 ```
 
-## Step 4: Create Custom Catalog
+Only the `tmdb` discovery server needs this secret. The embed resolver does not call TMDB.
+
+## 3. Create a Docker MCP Profile
+
+Create a focused profile for this project:
 
 ```bash
-# Create catalogs directory if it doesn't exist
-mkdir -p ~/.docker/mcp/catalogs
-
-# Create or edit custom.yaml
-nano ~/.docker/mcp/catalogs/custom.yaml
+docker mcp profile create --name tmdb-media
 ```
 
-Add these entries to custom.yaml:
+If `docker mcp profile` is unavailable, enable the profiles feature with `docker mcp feature enable profiles`, then retry.
 
-```yaml
-version: 2
-name: custom
-displayName: Custom MCP Servers
-registry:
-  tmdb:
-    description: "Read-only access to The Movie Database API for movie and TV information"
-    title: "TMDB"
-    type: server
-    dateAdded: "2025-01-09T00:00:00Z"
-    image: tmdb-mcp   # if pulled docker image, use: skimming124/tmdb-mcp:latest
-    ref: ""
-    readme: ""
-    toolsUrl: ""
-    source: ""
-    upstream: ""
-    icon: ""
-    tools:
-      - name: search_movies
-      - name: search_tv
-      - name: search_multi
-      - name: get_movie_details
-      - name: get_tv_details
-      - name: get_top_rated_movies
-      - name: get_top_rated_tv
-      - name: get_popular_movies
-      - name: get_popular_tv
-      - name: get_trending
-      - name: get_similar_movies
-      - name: get_similar_tv
-      - name: get_genres
-      - name: get_movie_credits
-      - name: get_movie_reviews
-      - name: discover_movies
-      - name: discover_tv
-    secrets:
-      - name: TMDB_API_KEY
-        env: TMDB_API_KEY
-        example: "abc123def456ghi789"
-    metadata:
-      category: integration
-      tags:
-        - movies
-        - tv
-        - entertainment
-        - media
-        - tmdb
-      license: MIT
-      owner: local
-  tmdb-embed-resolver:
-    description: "Local provider URL resolver for known TMDB movie and TV IDs"
-    title: "TMDB Embed Resolver"
-    type: server
-    dateAdded: "2026-04-25T00:00:00Z"
-    image: tmdb-embed-resolver
-    ref: ""
-    readme: ""
-    toolsUrl: ""
-    source: ""
-    upstream: ""
-    icon: ""
-    tools:
-      - name: list_embed_providers
-      - name: generate_embed_urls_for_tmdb
-    env:
-      - name: TMDB_EMBED_UI_BASE_URL
-        value: "http://localhost:8689"
-    metadata:
-      category: integration
-      tags:
-        - movies
-        - tv
-        - entertainment
-        - media
-        - tmdb
-      license: MIT
-      owner: local
-```
-
-## Step 5: Update Registry
+Add the two local server definitions from this repository:
 
 ```bash
-# Edit registry file
-nano ~/.docker/mcp/registry.yaml
+docker mcp profile server add tmdb-media \
+  --server file://$(pwd)/docker-mcp/tmdb.yaml \
+  --server file://$(pwd)/docker-mcp/tmdb-embed-resolver.yaml
 ```
 
-Add this entry under the existing `registry:` key:
+Confirm the profile:
 
-```yaml
-registry:
-  # ... existing servers ...
-  tmdb:
-    ref: ""
-  tmdb-embed-resolver:
-    ref: ""
+```bash
+docker mcp profile server ls --filter profile=tmdb-media
+docker mcp profile config tmdb-media --get-all
 ```
 
-**IMPORTANT**: The entry must be under the `registry:` key, not at the root level.
+## 4. Test the Gateway
 
-## Step 6: Configure Claude Desktop
+List available tools:
 
-Find your Claude Desktop config file:
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+```bash
+docker mcp tools list --gateway-arg="--profile=tmdb-media"
+```
 
-Edit the file and add your custom catalog to the args array:
+Call a simple TMDB tool:
+
+```bash
+docker mcp tools call search_movies \
+  --gateway-arg="--profile=tmdb-media" \
+  query=inception \
+  page=1
+```
+
+Call the resolver:
+
+```bash
+docker mcp tools call generate_embed_urls_for_tmdb \
+  --gateway-arg="--profile=tmdb-media" \
+  media_type=movie \
+  tmdb_id=550
+```
+
+The resolver response should include a `ui_url`. Opening that link should load the local UI and generate provider links.
+
+## 5. Connect LM Studio
+
+LM Studio uses `mcp.json` for frequently used local MCP servers. Add Docker MCP Gateway as the server command:
 
 ```json
 {
   "mcpServers": {
-    "mcp-toolkit-gateway": {
+    "tmdb-media": {
       "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-v", "/var/run/docker.sock:/var/run/docker.sock",
-        "-v", "[YOUR_HOME]/.docker/mcp:/mcp",
-        "docker/mcp-gateway",
-        "--catalog=/mcp/catalogs/docker-mcp.yaml",
-        "--catalog=/mcp/catalogs/custom.yaml",
-        "--config=/mcp/config.yaml",
-        "--registry=/mcp/registry.yaml",
-        "--tools-config=/mcp/tools.yaml",
-        "--transport=stdio"
-      ]
+      "args": ["mcp", "gateway", "run", "--profile", "tmdb-media"]
     }
   }
 }
 ```
 
-Replace `[YOUR_HOME]` with:
-- **macOS**: `/Users/your_username`
-- **Windows**: `C:\\Users\\your_username` (use double backslashes)
-- **Linux**: `/home/your_username`
+In LM Studio Server Settings, enable **Allow calling servers from mcp.json**.
 
-## Step 7: Restart Claude Desktop
+When using the LM Studio API, include the plugin ID for the configured MCP server in the request integrations. LM Studio's exact plugin ID display can vary by version, so confirm it in the LM Studio MCP configuration screen after saving `mcp.json`.
 
-1. Quit Claude Desktop completely
-2. Start Claude Desktop again
-3. Your TMDB and embed resolver tools should now appear.
+## 6. Connect Claude Desktop
 
-## Step 8: Test Your Server
+Add the same gateway command to Claude Desktop:
 
-```bash
-# Verify it appears in the list
-docker mcp server list
-
-# If you don't see your servers, check logs:
-docker logs tmdb-mcp
-docker logs tmdb-embed-resolver
-
-# Test a tool in Claude Desktop by asking:
-# "Search for movies about space"
-# "What's the TMDB ID for Breaking Bad?"
-# "Show me trending movies this week"
-# "Generate provider URLs for movie TMDB ID 550"
+```json
+{
+  "mcpServers": {
+    "tmdb-media": {
+      "command": "docker",
+      "args": ["mcp", "gateway", "run", "--profile", "tmdb-media"]
+    }
+  }
+}
 ```
 
-## Troubleshooting Tips
+Claude Desktop config paths:
 
-If the tools don't appear:
-1. Check that the Docker images built successfully: `docker images | grep tmdb`
-2. Verify your API key is set: `docker mcp secret list`
-3. Ensure the catalog file has correct YAML syntax
-4. Check Claude Desktop logs for any errors
-5. Make sure you restarted Claude Desktop after configuration changes
-6. Verify the Dockerfile, requirements, and catalog entries match the image names you built.
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
 
-Your local MCP toolchain is ready to use. Search and discover media with `tmdb`, then generate provider URLs from a confirmed TMDB ID with `tmdb-embed-resolver`.
+Restart Claude Desktop after editing the file.
+
+## Recommended Prompts
+
+Use prompts that let the model discover first and resolve only after user confirmation:
+
+- "Show me comedy movies with a rating above 6 from before 2003."
+- "Find highly rated sci-fi movies from the 1990s and give me five options."
+- "Search for TV shows similar to The Office."
+- "I choose movie TMDB ID 550. Give me the local UI link."
+
+For advanced discovery, the model should use `get_genres` first if it does not know the genre ID, then call `discover_movies` or `discover_tv`.
+
+Example TMDB discover parameters for "comedy movies rated above 6 before 2003":
+
+```json
+{
+  "with_genres": "35",
+  "vote_average.gte": "6",
+  "primary_release_date.lte": "2002-12-31",
+  "sort_by": "vote_average.desc"
+}
+```
+
+## Provider Configuration
+
+The project ships with provider templates in `providers.json`, and the UI image ships with `ui/src/providers.json`. Providers change often, so treat these as configurable runtime data.
+
+For the embed resolver, mount a replacement provider file and set `TMDB_PROVIDERS_PATH` in the server definition or catalog entry.
+
+For the UI, rebuild the UI image with an updated `ui/src/providers.json`, or run a custom image that contains your provider list.
+
+## Local Development Builds
+
+Use these commands only when testing changes locally:
+
+```bash
+docker build -t tmdb-mcp .
+docker build -f embed-resolver-mcp/Dockerfile -t tmdb-embed-resolver .
+docker build -f ui/Dockerfile -t tmdb-embed-ui ./ui
+```
+
+Then edit `docker-mcp/tmdb.yaml` and `docker-mcp/tmdb-embed-resolver.yaml` to point at the local image names.
+
+## Troubleshooting
+
+- `docker: unknown command: docker mcp`: update Docker Desktop and enable MCP Toolkit.
+- Tools are missing in the client: confirm `docker mcp gateway run --profile tmdb-media` starts without errors.
+- TMDB tools return `{"error": "TMDB_API_KEY not set"}`: re-run `docker mcp secret set TMDB_API_KEY=...`.
+- UI links do not open: confirm `docker ps` shows `tmdb-embed-ui` and `curl http://localhost:8689/health` succeeds.
+- Local models choose the wrong tool: tell the model to use TMDB discovery tools first, then call `generate_embed_urls_for_tmdb` only after the user chooses a result.

@@ -1,0 +1,18 @@
+services:
+  # Web UI for generating embed URLs
+  tmdb-embed-ui:
+    # Option 1: Pull image from dockerhub
+    image: skimming124/tmdb-embed-ui:latest
+    # Option 1: Build image from source
+    # build: .
+    container_name: tmdb-embed-ui
+    ports:
+      - "8689:8689"
+    environment:
+      - PORT=8689
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

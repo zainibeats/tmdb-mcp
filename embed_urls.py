@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
 
 
 DEFAULT_UI_BASE_URL = "http://localhost:8689"
@@ -115,7 +116,11 @@ def build_ui_prefill_url(
 ) -> str:
     """Build a local UI URL that pre-fills the embed form."""
     base_url = ui_base_url.rstrip("/")
-    query = f"mediaType={media_type}&tmdbId={tmdb_id}"
+    params = {
+        "mediaType": media_type,
+        "tmdbId": tmdb_id,
+    }
     if media_type == "tv":
-        query = f"{query}&season={season}&episode={episode}"
-    return f"{base_url}/?{query}"
+        params["season"] = season
+        params["episode"] = episode
+    return f"{base_url}/?{urlencode(params)}"
