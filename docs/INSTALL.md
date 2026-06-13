@@ -101,12 +101,13 @@ List available tools:
 docker mcp tools list --gateway-arg="--profile=tmdb-media"
 ```
 
-Call a simple TMDB tool:
+Call a simple TMDB discovery tool:
 
 ```bash
-docker mcp tools call search_movies \
+docker mcp tools call find_media \
   --gateway-arg="--profile=tmdb-media" \
   query=inception \
+  media_type=movie \
   page=1
 ```
 
@@ -172,18 +173,20 @@ Use prompts that let the model discover first and resolve only after user confir
 - "Search for TV shows similar to The Office."
 - "I choose movie TMDB ID 550. Give me the local UI link."
 
-For advanced discovery, the model should use `get_genres` first if it does not know the genre ID, then call `discover_movies` or `discover_tv`.
+For advanced discovery, the model should use `get_genres` first if it does not know the genre ID, then call `discover_media`.
 
 Example TMDB discover parameters for "comedy movies rated above 6 before 2003":
 
 ```json
 {
+  "media_type": "movie",
   "with_genres": "35",
-  "vote_average.gte": "6",
-  "primary_release_date.lte": "2002-12-31",
+  "vote_average_gte": "6",
   "sort_by": "vote_average.desc"
 }
 ```
+
+For less common TMDB discover filters, pass them through `filters_json` as a JSON object.
 
 ## Provider Configuration
 

@@ -8,23 +8,15 @@ secrets:
     env: TMDB_API_KEY
     example: tmdb_api_key_here
 tools:
-  - name: search_movies
-  - name: search_tv
-  - name: search_multi
-  - name: get_movie_details
-  - name: get_tv_details
-  - name: get_top_rated_movies
-  - name: get_top_rated_tv
-  - name: get_popular_movies
-  - name: get_popular_tv
-  - name: get_trending
-  - name: get_similar_movies
-  - name: get_similar_tv
+  - name: find_media
+  - name: discover_media
+  - name: get_media_details
+  - name: get_similar_media
+  - name: get_trending_media
+  - name: get_popular_media
+  - name: get_top_rated_media
   - name: get_genres
   - name: get_movie_credits
-  - name: get_movie_reviews
-  - name: discover_movies
-  - name: discover_tv
 metadata:
   category: integration
   tags:

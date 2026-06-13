@@ -12,24 +12,20 @@ The separate embed resolver MCP server turns a confirmed TMDB ID into provider U
 
 ## Features
 
-### Current Implementation
-- **`search_movies`** - Search for movies by title with pagination support
-- **`search_tv`** - Search for TV shows by title with pagination support
-- **`search_multi`** - Search across movies, TV shows, and people
-- **`get_movie_details`** - Get comprehensive details about a specific movie
-- **`get_tv_details`** - Get comprehensive details about a specific TV show
-- **`get_top_rated_movies`** - Retrieve top-rated movies with pagination
-- **`get_top_rated_tv`** - Retrieve top-rated TV shows with pagination
-- **`get_popular_movies`** - Get currently popular movies with pagination
-- **`get_popular_tv`** - Get currently popular TV shows with pagination
-- **`get_trending`** - Get trending content (movies/TV/all) for day or week
-- **`get_similar_movies`** - Find movies similar to a given movie
-- **`get_similar_tv`** - Find TV shows similar to a given TV show
-- **`get_genres`** - Get list of available genres for movies or TV
-- **`get_movie_credits`** - Get cast and crew information for a movie
-- **`get_movie_reviews`** - Get user reviews for a movie with pagination
-- **`discover_movies`** - Discover movies with advanced filters (genre, year, rating, etc.)
-- **`discover_tv`** - Discover TV shows with advanced filters
+### Default Docker MCP Tools
+- **`find_media`** - Search movies, TV, or both by title/query
+- **`discover_media`** - Discover movies or TV shows with common filters
+- **`get_media_details`** - Get compact details for a confirmed movie or TV ID
+- **`get_similar_media`** - Find related titles from a confirmed movie or TV ID
+- **`get_trending_media`** - Get trending movies, TV, or both
+- **`get_popular_media`** - Get currently popular movies or TV shows
+- **`get_top_rated_media`** - Get top-rated movies or TV shows
+- **`get_genres`** - Get TMDB genre IDs for movie or TV discovery
+- **`get_movie_credits`** - Get core cast/crew for a movie
+- **`list_embed_providers`** - List configured provider names
+- **`generate_embed_urls_for_tmdb`** - Generate provider URLs and a helper UI URL after user selection
+
+The Python TMDB server still includes lower-level raw TMDB helpers for direct local development, but the Docker MCP catalog exposes the focused assistant-friendly tools by default.
 
 ## Recommended Runtime
 

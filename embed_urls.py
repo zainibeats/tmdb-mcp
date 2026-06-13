@@ -46,6 +46,15 @@ def _normalize_provider_filter(provider_names: list[str] | None) -> set[str]:
     }
 
 
+def _positive_integer(value: str, label: str) -> str:
+    normalized = str(value).strip()
+    if not normalized:
+        raise ValueError(f"{label} is required")
+    if not normalized.isdigit() or int(normalized) < 1:
+        raise ValueError(f"{label} must be a positive integer")
+    return normalized
+
+
 def generate_embed_urls(
     media_type: str,
     tmdb_id: str,
@@ -56,14 +65,13 @@ def generate_embed_urls(
 ) -> dict[str, Any]:
     """Generate provider URLs and a local UI prefill URL for a TMDB item."""
     normalized_media_type = media_type.strip().lower()
-    normalized_tmdb_id = tmdb_id.strip()
-    normalized_season = str(season).strip() or "1"
-    normalized_episode = str(episode).strip() or "1"
 
     if normalized_media_type not in {"movie", "tv"}:
         raise ValueError('media_type must be "movie" or "tv"')
-    if not normalized_tmdb_id:
-        raise ValueError("tmdb_id is required")
+
+    normalized_tmdb_id = _positive_integer(tmdb_id, "tmdb_id")
+    normalized_season = _positive_integer(season or "1", "season")
+    normalized_episode = _positive_integer(episode or "1", "episode")
 
     requested_providers = _normalize_provider_filter(provider_names)
     results = []

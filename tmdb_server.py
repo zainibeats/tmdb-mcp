@@ -8,6 +8,18 @@ import logging
 import json
 import httpx
 from mcp.server.fastmcp import FastMCP
+from tmdb_formatting import (
+    error_text,
+    format_candidate_list,
+    format_genres,
+    format_media_details,
+    format_movie_credits,
+    normalize_media_type,
+    normalize_page,
+    normalize_time_window,
+    parse_json_object,
+    require_tmdb_id,
+)
 
 # Configure logging to stderr
 logging.basicConfig(
@@ -25,10 +37,10 @@ API_KEY = os.environ.get("TMDB_API_KEY", "")
 BASE_URL = "https://api.themoviedb.org/3"
 
 # === UTILITY FUNCTIONS ===
-async def make_tmdb_request(endpoint: str, params: dict = None) -> str:
-    """Make a request to TMDB API and return raw JSON response."""
+async def make_tmdb_json(endpoint: str, params: dict = None) -> dict:
+    """Make a request to TMDB API and return a JSON-compatible dict."""
     if not API_KEY:
-        return '{"error": "TMDB_API_KEY not set"}'
+        return {"error": "TMDB_API_KEY not set"}
     
     url = f"{BASE_URL}{endpoint}"
     params = params or {}
@@ -38,13 +50,227 @@ async def make_tmdb_request(endpoint: str, params: dict = None) -> str:
         try:
             response = await client.get(url, params=params, timeout=10)
             response.raise_for_status()
-            return json.dumps(response.json(), indent=2)
+            return response.json()
         except httpx.HTTPStatusError as e:
-            return json.dumps({"error": f"API error: {e.response.status_code}"})
+            return {"error": f"API error: {e.response.status_code}"}
         except Exception as e:
-            return json.dumps({"error": str(e)})
+            return {"error": str(e)}
+
+
+async def make_tmdb_request(endpoint: str, params: dict = None) -> str:
+    """Make a request to TMDB API and return raw JSON response."""
+    return json.dumps(await make_tmdb_json(endpoint, params), indent=2)
+
+
+def _clean(value: str) -> str:
+    return str(value).strip()
+
+
+def _discover_params(
+    media_type: str,
+    page: str,
+    sort_by: str,
+    with_genres: str,
+    year: str,
+    first_air_date_year: str,
+    vote_average_gte: str,
+    vote_count_gte: str,
+    filters_json: str,
+) -> dict:
+    params = parse_json_object(filters_json, "filters_json")
+    params["page"] = normalize_page(page)
+
+    if _clean(sort_by):
+        params["sort_by"] = _clean(sort_by)
+    if _clean(with_genres):
+        params["with_genres"] = _clean(with_genres)
+    if media_type == "movie" and _clean(year):
+        params["year"] = _clean(year)
+    if media_type == "tv" and _clean(first_air_date_year):
+        params["first_air_date_year"] = _clean(first_air_date_year)
+    if _clean(vote_average_gte):
+        params["vote_average.gte"] = _clean(vote_average_gte)
+    if _clean(vote_count_gte):
+        params["vote_count.gte"] = _clean(vote_count_gte)
+    return params
 
 # === MCP TOOLS ===
+
+# Focused assistant-friendly tools
+@mcp.tool()
+async def find_media(query: str = "", media_type: str = "all", page: str = "1") -> str:
+    """Search movies, TV, or both by title and return compact candidate choices."""
+    logger.info("Finding media: %s (%s)", query, media_type)
+
+    if not query.strip():
+        return error_text("query is required")
+
+    try:
+        normalized_media_type = normalize_media_type(media_type, allow_all=True)
+        normalized_page = normalize_page(page)
+    except ValueError as e:
+        return error_text(str(e))
+
+    endpoint_by_type = {
+        "movie": "/search/movie",
+        "tv": "/search/tv",
+        "all": "/search/multi",
+    }
+    payload = await make_tmdb_json(
+        endpoint_by_type[normalized_media_type],
+        {"query": query.strip(), "page": normalized_page},
+    )
+    fallback = None if normalized_media_type == "all" else normalized_media_type
+    return format_candidate_list(
+        payload,
+        heading=f"Matches for {query.strip()}",
+        fallback_media_type=fallback,
+    )
+
+
+@mcp.tool()
+async def discover_media(
+    media_type: str = "movie",
+    page: str = "1",
+    sort_by: str = "popularity.desc",
+    with_genres: str = "",
+    year: str = "",
+    first_air_date_year: str = "",
+    vote_average_gte: str = "",
+    vote_count_gte: str = "",
+    filters_json: str = "{}",
+) -> str:
+    """Discover movies or TV shows with common filters and compact results."""
+    logger.info("Discovering focused media: %s", media_type)
+
+    try:
+        normalized_media_type = normalize_media_type(media_type)
+        params = _discover_params(
+            normalized_media_type,
+            page,
+            sort_by,
+            with_genres,
+            year,
+            first_air_date_year,
+            vote_average_gte,
+            vote_count_gte,
+            filters_json,
+        )
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(f"/discover/{normalized_media_type}", params)
+    return format_candidate_list(
+        payload,
+        heading=f"Discovered {normalized_media_type} results",
+        fallback_media_type=normalized_media_type,
+    )
+
+
+@mcp.tool()
+async def get_media_details(media_type: str = "movie", tmdb_id: str = "") -> str:
+    """Get compact details for a confirmed movie or TV ID."""
+    logger.info("Getting %s details for ID: %s", media_type, tmdb_id)
+
+    try:
+        normalized_media_type = normalize_media_type(media_type)
+        normalized_id = require_tmdb_id(tmdb_id)
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(f"/{normalized_media_type}/{normalized_id}")
+    return format_media_details(payload, media_type=normalized_media_type)
+
+
+@mcp.tool()
+async def get_similar_media(media_type: str = "movie", tmdb_id: str = "", page: str = "1") -> str:
+    """Find related titles from a confirmed movie or TV ID."""
+    logger.info("Getting similar %s for ID: %s", media_type, tmdb_id)
+
+    try:
+        normalized_media_type = normalize_media_type(media_type)
+        normalized_id = require_tmdb_id(tmdb_id)
+        normalized_page = normalize_page(page)
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(
+        f"/{normalized_media_type}/{normalized_id}/similar",
+        {"page": normalized_page},
+    )
+    return format_candidate_list(
+        payload,
+        heading=f"Similar {normalized_media_type} results for TMDB ID {normalized_id}",
+        fallback_media_type=normalized_media_type,
+    )
+
+
+@mcp.tool()
+async def get_trending_media(media_type: str = "all", time_window: str = "day", page: str = "1") -> str:
+    """Get trending movies, TV, or both."""
+    logger.info("Getting focused trending %s for %s", media_type, time_window)
+
+    try:
+        normalized_media_type = normalize_media_type(media_type, allow_all=True)
+        normalized_time_window = normalize_time_window(time_window)
+        normalized_page = normalize_page(page)
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(
+        f"/trending/{normalized_media_type}/{normalized_time_window}",
+        {"page": normalized_page},
+    )
+    fallback = None if normalized_media_type == "all" else normalized_media_type
+    return format_candidate_list(
+        payload,
+        heading=f"Trending {normalized_media_type} for {normalized_time_window}",
+        fallback_media_type=fallback,
+    )
+
+
+@mcp.tool()
+async def get_popular_media(media_type: str = "movie", page: str = "1") -> str:
+    """Get currently popular movies or TV shows."""
+    logger.info("Getting focused popular %s", media_type)
+
+    try:
+        normalized_media_type = normalize_media_type(media_type)
+        normalized_page = normalize_page(page)
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(
+        f"/{normalized_media_type}/popular",
+        {"page": normalized_page},
+    )
+    return format_candidate_list(
+        payload,
+        heading=f"Popular {normalized_media_type} results",
+        fallback_media_type=normalized_media_type,
+    )
+
+
+@mcp.tool()
+async def get_top_rated_media(media_type: str = "movie", page: str = "1") -> str:
+    """Get top-rated movies or TV shows."""
+    logger.info("Getting focused top-rated %s", media_type)
+
+    try:
+        normalized_media_type = normalize_media_type(media_type)
+        normalized_page = normalize_page(page)
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(
+        f"/{normalized_media_type}/top_rated",
+        {"page": normalized_page},
+    )
+    return format_candidate_list(
+        payload,
+        heading=f"Top-rated {normalized_media_type} results",
+        fallback_media_type=normalized_media_type,
+    )
 
 # Search Tools
 @mcp.tool()
@@ -229,28 +455,31 @@ async def get_similar_tv(tv_id: str = "", page: str = "1") -> str:
 # Genres Tool
 @mcp.tool()
 async def get_genres(media_type: str = "movie") -> str:
-    """Get list of genres - returns raw JSON from TMDB /genre/{media_type}/list endpoint."""
+    """Get TMDB genre IDs for movie or TV discovery."""
     logger.info(f"Getting {media_type} genres")
     
-    # Validate media_type
-    valid_types = ["movie", "tv"]
-    if not media_type.strip() or media_type.strip() not in valid_types:
-        media_type = "movie"
+    try:
+        normalized_media_type = normalize_media_type(media_type)
+    except ValueError as e:
+        return error_text(str(e))
     
-    result = await make_tmdb_request(f"/genre/{media_type.strip()}/list")
-    return result
+    payload = await make_tmdb_json(f"/genre/{normalized_media_type}/list")
+    return format_genres(payload, media_type=normalized_media_type)
 
 # Credits and Reviews Tools
 @mcp.tool()
 async def get_movie_credits(movie_id: str = "") -> str:
-    """Get cast and crew for a movie - returns raw JSON from TMDB /movie/{id}/credits endpoint."""
+    """Get core cast and crew for a movie."""
     logger.info(f"Getting movie credits for ID: {movie_id}")
     
-    if not movie_id.strip():
-        return '{"error": "Movie ID is required"}'
+    try:
+        normalized_id = require_tmdb_id(movie_id, "movie_id")
+    except ValueError as e:
+        return error_text(str(e))
     
-    result = await make_tmdb_request(f"/movie/{movie_id.strip()}/credits")
-    return result
+    payload = await make_tmdb_json(f"/movie/{normalized_id}/credits")
+    payload.setdefault("id", normalized_id)
+    return format_movie_credits(payload)
 
 @mcp.tool()
 async def get_movie_reviews(movie_id: str = "", page: str = "1") -> str:
