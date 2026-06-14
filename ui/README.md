@@ -10,7 +10,7 @@ A web interface for generating streaming embed URLs using TMDB IDs with support 
 
 1. **Launch with Docker**:
    ```bash
-   docker run -d --name tmdb-embed-ui -p 8689:8689 skimming124/tmdb-embed-ui:latest
+   docker run -d --name tmdb-embed-ui -p 8689:8689 zainibeats/tmdb-embed-ui:latest
    ```
 
 2. **Access the interface** at http://localhost:8689

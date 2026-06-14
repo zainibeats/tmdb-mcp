@@ -12,7 +12,7 @@ The separate embed resolver MCP server turns a confirmed TMDB ID into provider U
 
 ## Features
 
-### Default Docker MCP Tools
+### MCP Tools
 - **`find_media`** - Search movies, TV, or both by title/query
 - **`discover_media`** - Discover movies or TV shows with common filters
 - **`get_media_details`** - Get compact details for a confirmed movie or TV ID
@@ -25,30 +25,34 @@ The separate embed resolver MCP server turns a confirmed TMDB ID into provider U
 - **`list_embed_providers`** - List configured provider names
 - **`generate_embed_urls_for_tmdb`** - Generate provider URLs and a helper UI URL after user selection
 
-The Python TMDB server still includes lower-level raw TMDB helpers for direct local development, but the Docker MCP catalog exposes the focused assistant-friendly tools by default.
+The Python TMDB server still includes lower-level raw TMDB helpers for direct local development, but the recommended client configuration exposes the focused assistant-friendly tools by default.
 
 ## Recommended Runtime
 
-Use Docker MCP Gateway as the single MCP entrypoint for local clients such as LM Studio or Claude Desktop.
+Linux users should run the Python MCP servers directly over stdio. This does not require Docker MCP Gateway or Docker Desktop.
 
-The production-style local setup uses three containers/images:
+Docker MCP Gateway is also supported for users who already have Docker Desktop with MCP Toolkit.
 
-- `skimming124/tmdb-mcp:latest` - TMDB discovery MCP server
-- `skimming124/tmdb-embed-resolver:latest` - MCP server that returns provider URLs and a clickable local UI link
-- `skimming124/tmdb-embed-ui:latest` - companion UI served at `http://localhost:8689`
+The Docker MCP setup uses three images:
+
+- `zainibeats/tmdb-mcp:latest` - TMDB discovery MCP server
+- `zainibeats/tmdb-embed-resolver:latest` - MCP server that returns provider URLs and a clickable local UI link
+- `zainibeats/tmdb-embed-ui:latest` - companion UI served at `http://localhost:8689`
 
 Keeping discovery and provider-link generation as separate MCP servers makes tool choice easier for local models: first discover and compare titles, then call the resolver only after the user chooses a specific TMDB ID.
 
 ## Prerequisites
 
-- Docker Desktop with MCP Toolkit enabled
-- Docker MCP CLI plugin (`docker mcp` command)
+- Python 3.11+
 - TMDB API Key (free from https://www.themoviedb.org/settings/api)
-- LM Studio 0.4.0+ or another MCP client that can run Docker MCP Gateway over stdio
+- LM Studio 0.4.0+, Claude Desktop, Claude Code, or another stdio MCP client
+- Optional: Docker Engine for the companion UI container
+- Optional: Docker Desktop with MCP Toolkit for Docker MCP Gateway
 
 ## Installation
 
-Follow the [installation guide](./docs/INSTALL.md) for step-by-step instructions to get the MCP servers running through Docker MCP Gateway.
+- Linux/native stdio: [Linux install guide](./docs/LINUX.md)
+- Docker MCP Gateway: [Docker MCP install guide](./docs/INSTALL.md)
 
 ## Usage Examples
 
@@ -70,12 +74,14 @@ In Claude Desktop, you can ask:
 ```
 Claude Desktop / LM Studio / Claude Code
               |
-       Docker MCP Gateway
+       stdio MCP processes
           |          |
    TMDB MCP      Embed Resolver MCP
       |               |
    TMDB API      Provider templates
 ```
+
+Docker MCP Gateway can replace the direct stdio processes when using the optional Docker MCP setup.
 
 Expected flow:
 

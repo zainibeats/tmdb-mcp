@@ -1,6 +1,6 @@
 # Installation
 
-This guide sets up the TMDB MCP toolchain for local-model clients through Docker MCP Gateway.
+This guide sets up the TMDB MCP toolchain through Docker MCP Gateway. On Linux, the simpler recommended path is direct stdio; see [Linux installation](./LINUX.md).
 
 ## Architecture
 
@@ -22,9 +22,9 @@ LM Studio / Claude Desktop
 
 The recommended runtime images are:
 
-- `skimming124/tmdb-mcp:latest`
-- `skimming124/tmdb-embed-resolver:latest`
-- `skimming124/tmdb-embed-ui:latest`
+- `zainibeats/tmdb-mcp:latest`
+- `zainibeats/tmdb-embed-resolver:latest`
+- `zainibeats/tmdb-embed-ui:latest`
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ docker run -d \
   --name tmdb-embed-ui \
   --restart unless-stopped \
   -p 8689:8689 \
-  skimming124/tmdb-embed-ui:latest
+  zainibeats/tmdb-embed-ui:latest
 ```
 
 Verify it:
