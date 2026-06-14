@@ -8,7 +8,9 @@ This path runs the MCP servers directly over stdio. It works with normal Linux D
 - Node.js 18+ if running the optional UI without Docker
 - Optional: Docker Engine if running the UI container
 - TMDB API key from `https://www.themoviedb.org/settings/api`
-- An MCP client that can launch stdio servers, such as LM Studio, Claude Desktop, or Claude Code
+- LM Studio 0.4.0+ as the recommended Linux MCP client
+
+Open WebUI with Ollama is a good local chat stack, but this guide uses LM Studio because it can launch stdio MCP servers directly from `mcp.json`.
 
 ## 1. Install the Python Servers
 
@@ -30,9 +32,9 @@ TMDB_API_KEY="your-tmdb-api-key" \
 
 Press `Ctrl+C` after it starts. MCP clients will launch this process themselves.
 
-## 2. Configure Your MCP Client
+## 2. Configure LM Studio
 
-Use absolute paths in client config files.
+In LM Studio, open the **Program** tab, choose **Install > Edit mcp.json**, and add these servers. Use absolute paths.
 
 ```json
 {
@@ -55,13 +57,7 @@ Use absolute paths in client config files.
 }
 ```
 
-Claude Desktop config path on Linux:
-
-```text
-~/.config/Claude/claude_desktop_config.json
-```
-
-Restart the MCP client after changing its config.
+Restart LM Studio after changing `mcp.json`.
 
 ## 3. Start the Optional UI
 
@@ -74,7 +70,7 @@ docker run -d \
   --name tmdb-embed-ui \
   --restart unless-stopped \
   -p 8689:8689 \
-  zainibeats/tmdb-embed-ui:latest
+  skimming124/tmdb-embed-ui:latest
 ```
 
 Without Docker:

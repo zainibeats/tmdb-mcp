@@ -22,9 +22,9 @@ LM Studio / Claude Desktop
 
 The recommended runtime images are:
 
-- `zainibeats/tmdb-mcp:latest`
-- `zainibeats/tmdb-embed-resolver:latest`
-- `zainibeats/tmdb-embed-ui:latest`
+- `skimming124/tmdb-mcp:latest`
+- `skimming124/tmdb-embed-resolver:latest`
+- `skimming124/tmdb-embed-ui:latest`
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ docker run -d \
   --name tmdb-embed-ui \
   --restart unless-stopped \
   -p 8689:8689 \
-  zainibeats/tmdb-embed-ui:latest
+  skimming124/tmdb-embed-ui:latest
 ```
 
 Verify it:
@@ -160,7 +160,6 @@ Claude Desktop config paths:
 
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
 
 Restart Claude Desktop after editing the file.
 

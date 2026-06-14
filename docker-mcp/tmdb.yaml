@@ -1,7 +1,7 @@
 name: tmdb
 title: TMDB
 type: server
-image: zainibeats/tmdb-mcp:latest
+image: skimming124/tmdb-mcp:latest
 description: Read-only TMDB discovery tools for movie and TV recommendations.
 secrets:
   - name: TMDB_API_KEY
@@ -25,4 +25,4 @@ metadata:
     - entertainment
     - tmdb
   license: MIT
-  owner: zainibeats
+  owner: skimming124

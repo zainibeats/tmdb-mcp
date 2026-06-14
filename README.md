@@ -6,7 +6,7 @@ A local Model Context Protocol (MCP) toolchain for media discovery and TMDB-base
 
 ## Purpose
 
-The main TMDB MCP server provides a read-only interface for AI assistants (eg. Claude Desktop, LM Studio, Claude Code etc.) to query movie and TV show data from TMDB, including searching, retrieving details, discovering content, and getting recommendations.
+The main TMDB MCP server provides a read-only interface for AI assistants and MCP clients such as LM Studio, Claude Code, and Claude Desktop on supported platforms. It can query movie and TV show data from TMDB, including searching, retrieving details, discovering content, and getting recommendations.
 
 The separate embed resolver MCP server turns a confirmed TMDB ID into provider URLs and a local UI prefill URL. This keeps discovery and URL resolution as separate local services.
 
@@ -35,9 +35,9 @@ Docker MCP Gateway is also supported for users who already have Docker Desktop w
 
 The Docker MCP setup uses three images:
 
-- `zainibeats/tmdb-mcp:latest` - TMDB discovery MCP server
-- `zainibeats/tmdb-embed-resolver:latest` - MCP server that returns provider URLs and a clickable local UI link
-- `zainibeats/tmdb-embed-ui:latest` - companion UI served at `http://localhost:8689`
+- `skimming124/tmdb-mcp:latest` - TMDB discovery MCP server
+- `skimming124/tmdb-embed-resolver:latest` - MCP server that returns provider URLs and a clickable local UI link
+- `skimming124/tmdb-embed-ui:latest` - companion UI served at `http://localhost:8689`
 
 Keeping discovery and provider-link generation as separate MCP servers makes tool choice easier for local models: first discover and compare titles, then call the resolver only after the user chooses a specific TMDB ID.
 
@@ -45,7 +45,7 @@ Keeping discovery and provider-link generation as separate MCP servers makes too
 
 - Python 3.11+
 - TMDB API Key (free from https://www.themoviedb.org/settings/api)
-- LM Studio 0.4.0+, Claude Desktop, Claude Code, or another stdio MCP client
+- LM Studio 0.4.0+, Claude Code, or another stdio MCP client
 - Optional: Docker Engine for the companion UI container
 - Optional: Docker Desktop with MCP Toolkit for Docker MCP Gateway
 
@@ -56,7 +56,7 @@ Keeping discovery and provider-link generation as separate MCP servers makes too
 
 ## Usage Examples
 
-In Claude Desktop, you can ask:
+In your MCP client, you can ask:
 - "Find the TMDB ID for Breaking Bad"
 - "Search for movies with 'inception' in the title"
 - "Show me the top rated sci-fi movies"
@@ -72,7 +72,7 @@ In Claude Desktop, you can ask:
 
 ## Architecture
 ```
-Claude Desktop / LM Studio / Claude Code
+LM Studio / Claude Code / other MCP client
               |
        stdio MCP processes
           |          |

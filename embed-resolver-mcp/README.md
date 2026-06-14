@@ -45,5 +45,5 @@ docker mcp profile server add tmdb-media \
 Start the companion UI separately so returned `ui_url` links work:
 
 ```bash
-docker run -d --name tmdb-embed-ui -p 8689:8689 zainibeats/tmdb-embed-ui:latest
+docker run -d --name tmdb-embed-ui -p 8689:8689 skimming124/tmdb-embed-ui:latest
 ```

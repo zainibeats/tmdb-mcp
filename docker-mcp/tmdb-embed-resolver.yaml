@@ -1,7 +1,7 @@
 name: tmdb-embed-resolver
 title: TMDB Embed Resolver
 type: server
-image: zainibeats/tmdb-embed-resolver:latest
+image: skimming124/tmdb-embed-resolver:latest
 description: Generates provider URLs and a local UI link from a confirmed TMDB movie or TV ID.
 env:
   - name: TMDB_EMBED_UI_BASE_URL
@@ -17,4 +17,4 @@ metadata:
     - entertainment
     - tmdb
   license: MIT
-  owner: zainibeats
+  owner: skimming124

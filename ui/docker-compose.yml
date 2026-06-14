@@ -2,7 +2,7 @@ services:
   # Web UI for generating embed URLs
   tmdb-embed-ui:
     # Option 1: Pull image from dockerhub
-    image: zainibeats/tmdb-embed-ui:latest
+    image: skimming124/tmdb-embed-ui:latest
     # Option 1: Build image from source
     # build: .
     container_name: tmdb-embed-ui
