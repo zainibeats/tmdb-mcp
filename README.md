@@ -47,6 +47,7 @@ The default Docker image is `skimming124/tmdb-mcp:latest`.
 
 - Linux/native stdio: [Linux install guide](./docs/LINUX.md)
 - Open WebUI with Ollama or LM Studio: [Open WebUI guide](./docs/OPENWEBUI.md)
+- Example Docker Compose stack for Ollama, Open WebUI, and this project: [`compose.example.yml`](./compose.example.yml)
 - Docker MCP Gateway: [Docker MCP install guide](./docs/INSTALL.md)
 
 ## Usage Examples
