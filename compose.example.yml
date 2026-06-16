@@ -1,39 +1,48 @@
 services:
   ollama:
     image: ollama/ollama:latest
-    container_name: tmdb-ollama
+    container_name: ollama
+    tty: true
+    restart: unless-stopped
+    networks:
+      - tmdb-net
     ports:
       - "11434:11434"
     volumes:
       - ollama:/root/.ollama
-    restart: unless-stopped
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
-    container_name: tmdb-open-webui
+    container_name: open-webui
+    restart: unless-stopped
     depends_on:
       - ollama
       - tmdb-mcpo
+    networks:
+      - tmdb-net
     ports:
-      - "3000:8080"
+      - "8080:8080"
     environment:
-      OLLAMA_BASE_URL: http://ollama:11434
+      - 'WEBUI_SECRET_KEY={WEBUI_SECRET_KEY}'
     volumes:
       - open-webui:/app/backend/data
-    restart: unless-stopped
 
   tmdb-mcpo:
     build:
       context: .
       dockerfile: Dockerfile.mcpo
-    image: tmdb-mcp-mcpo:latest
     container_name: tmdb-mcpo
+    restart: unless-stopped
+    networks:
+      - tmdb-net
     ports:
       - "8000:8000"
     environment:
-      TMDB_API_KEY: ${TMDB_API_KEY:?Set TMDB_API_KEY in your shell or .env file}
-    restart: unless-stopped
+      TMDB_API_KEY: ${TMDB_API_KEY}
 
 volumes:
   ollama:
   open-webui:
+
+networks:
+   tmdb-net:
