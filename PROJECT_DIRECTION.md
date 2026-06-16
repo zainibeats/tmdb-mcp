@@ -2,31 +2,28 @@
 
 ## Goal
 
-Build a local-first MCP toolchain that helps an AI assistant find movies and TV shows through TMDB, present concise candidate choices, and only after user selection generate configurable educational provider links plus a helper UI URL.
+Build a local-first MCP tool service that helps an AI assistant find movies and TV shows through TMDB and present concise candidate choices.
 
-The primary product is the MCP experience for an assistant. The UI is a companion helper for opening, inspecting, and copying generated links.
+The primary product is the MCP tool service. End users should use it through an existing chat interface such as Open WebUI, LM Studio, Claude Code, or another MCP/OpenAPI-capable client.
 
 ## Intended Flow
 
 1. The user asks for a movie, TV show, recommendation, trend, or filtered discovery result.
 2. The assistant uses focused TMDB discovery tools.
 3. The assistant presents a short, human-readable list of candidates with enough detail to choose confidently.
-4. The user chooses a specific result.
-5. The assistant calls the embed resolver with the confirmed `media_type` and `tmdb_id`.
-6. The resolver returns configurable educational provider URLs and a local helper UI URL.
-
-The resolver should not be used during broad discovery.
+4. The user can ask follow-up questions, request similar titles, or ask for details on a specific TMDB result.
 
 ## Product Boundaries
 
 ### In Scope
 
-- Local MCP servers for assistant-driven media discovery.
+- Local MCP server for assistant-driven media discovery.
 - Assistant-friendly TMDB tools with clear, focused behavior.
 - Human-readable tool responses that are easy for local models to summarize.
-- Configurable provider URL templates for educational/local use.
-- A lightweight local UI helper.
-- Equal support for Docker MCP Gateway and direct Python/Node local development.
+- Open WebUI integration through `mcpo` without making this project a standalone chat UI.
+- Equal support for Ollama and LM Studio as model backends through Open WebUI.
+- Server-admin configured TMDB API keys.
+- Direct Python local development and Docker-based deployment.
 
 ### Out of Scope
 
@@ -34,7 +31,7 @@ The resolver should not be used during broad discovery.
 - Making the UI the main product.
 - Full TMDB API coverage.
 - Hard-coded sensitive values.
-- Provider availability guarantees.
+- Provider/embed URL generation as part of the recommended workflow.
 
 ## MCP Tool Surface
 
@@ -53,11 +50,6 @@ Proposed discovery tools:
 - `get_top_rated_media` - Get top-rated movies or TV shows.
 - `get_genres` - Get TMDB genre IDs for movie or TV discovery.
 - `get_movie_credits` - Get core cast/crew for a movie when useful for user choice.
-
-Proposed resolver tools:
-
-- `list_embed_providers` - List configured provider names.
-- `generate_embed_urls_for_tmdb` - Generate provider URLs and a helper UI URL after the user has selected a specific TMDB item.
 
 ## Response Style
 
@@ -92,21 +84,21 @@ Structured JSON can still be used internally and in tests, but the default MCP r
 2. Replace the default exposed TMDB catalog with focused assistant-friendly tools.
 3. Keep or move raw TMDB helpers as internal implementation details.
 4. Tighten parameter validation and normalization for media type, page, IDs, and filters.
-5. Make root `providers.json` the canonical provider source.
-6. Keep the embed resolver separate and explicitly post-selection.
-7. Update README and install docs to reflect the focused workflow.
-8. Add lightweight tests for provider URL generation, formatting helpers, and validation.
+5. Add and maintain Open WebUI documentation using `mcpo`.
+6. Keep provider/embed resolver code out of the recommended workflow unless that scope is explicitly reintroduced.
+7. Update README and install docs to reflect the focused TMDB-only workflow.
+8. Add lightweight tests for formatting helpers and validation.
 
 ## Development Support
 
-Docker MCP Gateway remains the recommended production-style local setup.
+Open WebUI plus `mcpo` is the recommended end-user setup.
+
+Docker MCP Gateway remains supported for MCP clients that use it.
 
 Direct local development remains first-class:
 
 - Root TMDB MCP server should run with Python.
-- Embed resolver MCP should run with Python.
-- UI helper should run with Node.
-- Docs should clearly show both Docker and local commands.
+- Docs should clearly show direct MCP, Open WebUI, and Docker commands.
 
 ## Open Questions
 
