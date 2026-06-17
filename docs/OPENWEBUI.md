@@ -94,6 +94,7 @@ If Open WebUI is running in Docker, `localhost` inside the container is not the 
 - "Find recent highly rated horror movies and explain why each fits."
 - "What are some TV shows similar to The Office?"
 - "Show me trending movies this week."
+- "Find Christopher Nolan and show his notable credits."
 - "Find movies like Arrival, but slower and more emotional."
 
 ## Troubleshooting

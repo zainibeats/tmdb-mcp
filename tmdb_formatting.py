@@ -152,6 +152,22 @@ def format_genres(payload: dict[str, Any], *, media_type: str) -> str:
 
 def format_movie_credits(payload: dict[str, Any], *, cast_limit: int = 10, crew_limit: int = 8) -> str:
     """Format core movie cast and crew."""
+    return format_media_credits(payload, media_type="movie", cast_limit=cast_limit, crew_limit=crew_limit)
+
+
+def format_tv_credits(payload: dict[str, Any], *, cast_limit: int = 10, crew_limit: int = 8) -> str:
+    """Format core TV cast and crew."""
+    return format_media_credits(payload, media_type="tv", cast_limit=cast_limit, crew_limit=crew_limit)
+
+
+def format_media_credits(
+    payload: dict[str, Any],
+    *,
+    media_type: str,
+    cast_limit: int = 10,
+    crew_limit: int = 8,
+) -> str:
+    """Format core movie or TV cast and crew."""
     if error := tmdb_error_text(payload):
         return error
 
@@ -165,9 +181,78 @@ def format_movie_credits(payload: dict[str, Any], *, cast_limit: int = 10, crew_
         if person.get("job") in {"Director", "Writer", "Screenplay", "Producer"}
     ][:crew_limit]
 
-    lines = [f"Movie credits for TMDB ID {payload.get('id', 'unknown')}"]
+    label = "TV" if media_type == "tv" else "Movie"
+    lines = [f"{label} credits for TMDB ID {payload.get('id', 'unknown')}"]
     lines.append("Cast: " + ("; ".join(cast) if cast else "unknown"))
     lines.append("Key crew: " + ("; ".join(crew) if crew else "unknown"))
+    return "\n".join(lines)
+
+
+def format_person_search(payload: dict[str, Any], *, heading: str, limit: int = 8) -> str:
+    """Format person search results as compact candidate choices."""
+    if error := tmdb_error_text(payload):
+        return error
+
+    results = payload.get("results", [])[:limit]
+    page = payload.get("page")
+    total_results = payload.get("total_results")
+    parts = [heading]
+    if page is not None and total_results is not None:
+        parts[0] = f"{heading} (page {page}, {total_results} total)"
+
+    if not results:
+        parts.append("No person results found.")
+        return "\n".join(parts)
+
+    for index, person in enumerate(results, start=1):
+        known_for = "; ".join(
+            f"{_title(item)} ({_year(item)}, {_item_media_type(item, None) or 'unknown'})"
+            for item in person.get("known_for", [])[:3]
+        ) or "unknown"
+        parts.append("\n".join([
+            f"{index}. {person.get('name', 'Unknown')}",
+            f"TMDB person ID: {person.get('id', 'unknown')} | Known for: {person.get('known_for_department', 'unknown')}",
+            f"Notable credits: {known_for}",
+        ]))
+    return "\n\n".join(parts)
+
+
+def format_person_details(payload: dict[str, Any]) -> str:
+    """Format TMDB person details for assistant use."""
+    if error := tmdb_error_text(payload):
+        return error
+
+    biography = _overview({"overview": payload.get("biography")}, limit=360)
+    birthday = payload.get("birthday") or "unknown"
+    deathday = payload.get("deathday") or ""
+    lifespan = f"{birthday} to {deathday}" if deathday else birthday
+
+    return "\n".join([
+        str(payload.get("name") or "Unknown"),
+        f"TMDB person ID: {payload.get('id', 'unknown')} | Known for: {payload.get('known_for_department', 'unknown')}",
+        f"Born: {lifespan} | Place: {payload.get('place_of_birth') or 'unknown'}",
+        f"Biography: {biography}",
+    ])
+
+
+def format_person_credits(payload: dict[str, Any], *, limit: int = 12) -> str:
+    """Format a person's combined movie and TV credits."""
+    if error := tmdb_error_text(payload):
+        return error
+
+    cast = sorted(payload.get("cast", []), key=_credit_popularity, reverse=True)[:limit]
+    crew = sorted(payload.get("crew", []), key=_credit_popularity, reverse=True)[:limit]
+
+    lines = [f"Combined credits for TMDB person ID {payload.get('id', 'unknown')}"]
+    lines.append("Cast:")
+    lines.extend(_format_person_credit(item, include_character=True) for item in cast)
+    if not cast:
+        lines.append("- unknown")
+
+    lines.append("Crew:")
+    lines.extend(_format_person_credit(item, include_character=False) for item in crew)
+    if not crew:
+        lines.append("- unknown")
     return "\n".join(lines)
 
 
@@ -223,3 +308,20 @@ def _runtime_or_seasons(item: dict[str, Any], media_type: str) -> str:
         return f"Runtime: {runtime} minutes" if runtime else "Runtime: unknown"
     seasons = item.get("number_of_seasons")
     return f"Seasons: {seasons}" if seasons else "Seasons: unknown"
+
+
+def _credit_popularity(item: dict[str, Any]) -> float:
+    try:
+        return float(item.get("popularity") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _format_person_credit(item: dict[str, Any], *, include_character: bool) -> str:
+    media_type = _item_media_type(item, None) or "unknown"
+    parts = [f"- {_title(item)} ({_year(item)}, {media_type})"]
+    if include_character and item.get("character"):
+        parts.append(f"as {item.get('character')}")
+    if not include_character and item.get("job"):
+        parts.append(f"- {item.get('job')}")
+    return " ".join(parts)

@@ -12,11 +12,16 @@ tools:
   - name: discover_media
   - name: get_media_details
   - name: get_similar_media
+  - name: get_recommended_media
   - name: get_trending_media
   - name: get_popular_media
   - name: get_top_rated_media
   - name: get_genres
   - name: get_movie_credits
+  - name: get_tv_credits
+  - name: search_person
+  - name: get_person_details
+  - name: get_person_credits
 metadata:
   category: integration
   tags:

@@ -14,6 +14,10 @@ from tmdb_formatting import (
     format_genres,
     format_media_details,
     format_movie_credits,
+    format_person_credits,
+    format_person_details,
+    format_person_search,
+    format_tv_credits,
     normalize_media_type,
     normalize_page,
     normalize_time_window,
@@ -201,6 +205,29 @@ async def get_similar_media(media_type: str = "movie", tmdb_id: str = "", page: 
     return format_candidate_list(
         payload,
         heading=f"Similar {normalized_media_type} results for TMDB ID {normalized_id}",
+        fallback_media_type=normalized_media_type,
+    )
+
+
+@mcp.tool()
+async def get_recommended_media(media_type: str = "movie", tmdb_id: str = "", page: str = "1") -> str:
+    """Find TMDB recommendations from a confirmed movie or TV ID."""
+    logger.info("Getting recommended %s for ID: %s", media_type, tmdb_id)
+
+    try:
+        normalized_media_type = normalize_media_type(media_type)
+        normalized_id = require_tmdb_id(tmdb_id)
+        normalized_page = normalize_page(page)
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(
+        f"/{normalized_media_type}/{normalized_id}/recommendations",
+        {"page": normalized_page},
+    )
+    return format_candidate_list(
+        payload,
+        heading=f"Recommended {normalized_media_type} results for TMDB ID {normalized_id}",
         fallback_media_type=normalized_media_type,
     )
 
@@ -480,6 +507,71 @@ async def get_movie_credits(movie_id: str = "") -> str:
     payload = await make_tmdb_json(f"/movie/{normalized_id}/credits")
     payload.setdefault("id", normalized_id)
     return format_movie_credits(payload)
+
+
+@mcp.tool()
+async def get_tv_credits(tv_id: str = "") -> str:
+    """Get core cast and crew for a TV show."""
+    logger.info(f"Getting TV credits for ID: {tv_id}")
+
+    try:
+        normalized_id = require_tmdb_id(tv_id, "tv_id")
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(f"/tv/{normalized_id}/credits")
+    payload.setdefault("id", normalized_id)
+    return format_tv_credits(payload)
+
+
+@mcp.tool()
+async def search_person(query: str = "", page: str = "1") -> str:
+    """Search people by name and return compact candidate choices."""
+    logger.info("Searching people: %s", query)
+
+    if not query.strip():
+        return error_text("query is required")
+
+    try:
+        normalized_page = normalize_page(page)
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(
+        "/search/person",
+        {"query": query.strip(), "page": normalized_page},
+    )
+    return format_person_search(payload, heading=f"Person matches for {query.strip()}")
+
+
+@mcp.tool()
+async def get_person_details(person_id: str = "") -> str:
+    """Get compact details for a confirmed TMDB person ID."""
+    logger.info("Getting person details for ID: %s", person_id)
+
+    try:
+        normalized_id = require_tmdb_id(person_id, "person_id")
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(f"/person/{normalized_id}")
+    return format_person_details(payload)
+
+
+@mcp.tool()
+async def get_person_credits(person_id: str = "") -> str:
+    """Get a person's combined movie and TV credits."""
+    logger.info("Getting person credits for ID: %s", person_id)
+
+    try:
+        normalized_id = require_tmdb_id(person_id, "person_id")
+    except ValueError as e:
+        return error_text(str(e))
+
+    payload = await make_tmdb_json(f"/person/{normalized_id}/combined_credits")
+    payload.setdefault("id", normalized_id)
+    return format_person_credits(payload)
+
 
 @mcp.tool()
 async def get_movie_reviews(movie_id: str = "", page: str = "1") -> str:

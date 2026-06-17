@@ -134,6 +134,8 @@ Use prompts that let the model search, discover, and compare TMDB results:
 - "Show me comedy movies with a rating above 6 from before 2003."
 - "Find highly rated sci-fi movies from the 1990s and give me five options."
 - "Search for TV shows similar to The Office."
+- "Recommend movies based on Arrival."
+- "Find Christopher Nolan and show his most notable movie and TV credits."
 - "I liked Arrival. Find slower, emotional science fiction movies with strong reviews."
 
 For advanced discovery, the model should use `get_genres` first if it does not know the genre ID, then call `discover_media`.

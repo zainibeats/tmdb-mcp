@@ -17,11 +17,16 @@ The preferred end-user experience is to connect this server to an existing chat 
 - **`discover_media`** - Discover movies or TV shows with common filters
 - **`get_media_details`** - Get compact details for a confirmed movie or TV ID
 - **`get_similar_media`** - Find related titles from a confirmed movie or TV ID
+- **`get_recommended_media`** - Get TMDB recommendations from a confirmed movie or TV ID
 - **`get_trending_media`** - Get trending movies, TV, or both
 - **`get_popular_media`** - Get currently popular movies or TV shows
 - **`get_top_rated_media`** - Get top-rated movies or TV shows
 - **`get_genres`** - Get TMDB genre IDs for movie or TV discovery
 - **`get_movie_credits`** - Get core cast/crew for a movie
+- **`get_tv_credits`** - Get core cast/crew for a TV show
+- **`search_person`** - Search TMDB people by name
+- **`get_person_details`** - Get compact details for a confirmed person ID
+- **`get_person_credits`** - Get a person's combined movie and TV credits
 
 The Python TMDB server still includes lower-level raw TMDB helpers for direct local development, but the recommended client configuration exposes the focused assistant-friendly tools by default.
 
@@ -58,9 +63,11 @@ In your MCP client, you can ask:
 - "Show me the top rated sci-fi movies"
 - "Get details about movie ID 550"
 - "Find TV shows similar to The Office"
+- "Recommend movies based on Arrival"
 - "What movies are trending this week?"
 - "Show me popular TV shows page 2"
 - "Get the cast of The Dark Knight"
+- "Find Christopher Nolan and show his most notable credits"
 - "Find horror movies from 2023 with rating above 7"
 - "Search for content related to Christopher Nolan"
 

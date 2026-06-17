@@ -3,6 +3,10 @@ import pytest
 from tmdb_formatting import (
     format_candidate_list,
     format_media_details,
+    format_person_credits,
+    format_person_details,
+    format_person_search,
+    format_tv_credits,
     normalize_media_type,
     normalize_page,
     require_tmdb_id,
@@ -69,6 +73,96 @@ def test_format_media_details_handles_tv_shape():
     assert "TMDB ID: 1396 | Media type: tv" in formatted
     assert "Seasons: 5" in formatted
     assert "Genres: Drama" in formatted
+
+
+def test_format_tv_credits_labels_tv_results():
+    payload = {
+        "id": 1396,
+        "cast": [{"name": "Bryan Cranston", "character": "Walter White"}],
+        "crew": [{"name": "Vince Gilligan", "job": "Producer"}],
+    }
+
+    formatted = format_tv_credits(payload)
+
+    assert "TV credits for TMDB ID 1396" in formatted
+    assert "Bryan Cranston as Walter White" in formatted
+    assert "Vince Gilligan - Producer" in formatted
+
+
+def test_format_person_search_includes_known_for():
+    payload = {
+        "page": 1,
+        "total_results": 1,
+        "results": [
+            {
+                "id": 525,
+                "name": "Christopher Nolan",
+                "known_for_department": "Directing",
+                "known_for": [
+                    {
+                        "id": 155,
+                        "title": "The Dark Knight",
+                        "release_date": "2008-07-16",
+                        "media_type": "movie",
+                    }
+                ],
+            }
+        ],
+    }
+
+    formatted = format_person_search(payload, heading="Person matches for Nolan")
+
+    assert "Person matches for Nolan (page 1, 1 total)" in formatted
+    assert "TMDB person ID: 525 | Known for: Directing" in formatted
+    assert "The Dark Knight (2008, movie)" in formatted
+
+
+def test_format_person_details_includes_core_fields():
+    payload = {
+        "id": 525,
+        "name": "Christopher Nolan",
+        "known_for_department": "Directing",
+        "birthday": "1970-07-30",
+        "place_of_birth": "London, England",
+        "biography": "A British-American filmmaker.",
+    }
+
+    formatted = format_person_details(payload)
+
+    assert "Christopher Nolan" in formatted
+    assert "TMDB person ID: 525 | Known for: Directing" in formatted
+    assert "Born: 1970-07-30 | Place: London, England" in formatted
+    assert "A British-American filmmaker." in formatted
+
+
+def test_format_person_credits_splits_cast_and_crew():
+    payload = {
+        "id": 525,
+        "cast": [
+            {
+                "title": "Doodlebug",
+                "release_date": "1997-01-01",
+                "media_type": "movie",
+                "character": "Man",
+                "popularity": 1,
+            }
+        ],
+        "crew": [
+            {
+                "title": "Inception",
+                "release_date": "2010-07-15",
+                "media_type": "movie",
+                "job": "Director",
+                "popularity": 10,
+            }
+        ],
+    }
+
+    formatted = format_person_credits(payload)
+
+    assert "Combined credits for TMDB person ID 525" in formatted
+    assert "- Doodlebug (1997, movie) as Man" in formatted
+    assert "- Inception (2010, movie) - Director" in formatted
 
 
 @pytest.mark.parametrize("value", ["", "person", "both"])
