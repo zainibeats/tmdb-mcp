@@ -5,7 +5,10 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt mcpo
+# mcpo 0.0.20 declares `mcp>=1.17.0` with no upper bound, but imports
+# `streamablehttp_client`, which the mcp SDK renamed in 2.0. Cap mcp at
+# 1.x until mcpo supports the 2.x API.
+RUN pip install --no-cache-dir -r requirements.txt mcpo "mcp<2"
 
 COPY tmdb_server.py .
 COPY tmdb_formatting.py .

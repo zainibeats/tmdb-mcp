@@ -2,14 +2,25 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
-    tty: true
-    restart: unless-stopped
     networks:
       - tmdb-net
-    ports:
-      - "11434:11434"
+    tty: true
+    restart: unless-stopped
     volumes:
       - ollama:/root/.ollama
+      # Optional host directory for manually supplied GGUF files / Modelfiles.
+      # Ollama does not scan this path on its own; import explicitly with:
+      #   docker exec ollama ollama create <name> -f /models/Modelfile
+      - ${MODELS_DIR:-./models}:/models
+    # Requires an NVIDIA GPU plus the NVIDIA Container Toolkit on the host.
+    # Delete this whole `deploy:` block to run Ollama on CPU only.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all # To pin cards, replace this line with: device_ids: ['0']
+              capabilities: [gpu]
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
@@ -23,7 +34,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - 'WEBUI_SECRET_KEY={WEBUI_SECRET_KEY}'
+      - 'WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}'
+      # Ollama is only reachable on the compose network; "localhost" inside this
+      # container is the container itself, not the ollama service.
+      - 'OLLAMA_BASE_URL=http://ollama:11434'
     volumes:
       - open-webui:/app/backend/data
 
@@ -45,4 +59,4 @@ volumes:
   open-webui:
 
 networks:
-   tmdb-net:
+  tmdb-net:
